@@ -111,3 +111,40 @@ This project bridges electrical engineering domain knowledge with modern web dev
 - **TablePlus** - Database management
 
 ## 📸 Screenshots
+
+### Dashboard
+
+![Dashboard](public/images/screenshots/dashboard.png)
+_Dashboard showing key metrics, recent work orders, and upcoming maintenance_
+
+### Asset Management
+
+![Assets List](public/images/screenshots/assets-index.png)
+_Asset listing with filters, status indicators, and quick actions_
+
+![Asset Details](public/images/screenshots/assets-show.png)
+_Detailed asset view with specifications, QR code, and maintenance history_
+
+### Work Order Management
+
+![Work Orders List](public/images/screenshots/work-order-index.png)
+_Track all maintenance work orders with status indicators and filters_
+
+![Work Orders Details](public/images/screenshots/work-orders-show.png)
+_Work order with checklist, parts used, and maintenance log_
+
+### Fault Reporting
+
+![Fault Reporting List](public/images/screenshots/faults-index.png)
+_Monitor and manage electrical faults with severity levels_
+
+![Fault Reporting ](public/images/screenshots/faults-create.png)
+_Intuitive fault reporting interface with symptoms and image upload_
+
+### Maintenance Scheduling
+
+![Schedules List](public/images/screenshots/maintenance-schedules-index.png)
+_Overview of all preventive maintenance schedules_
+
+![Schedule Details](screenshots/maintenance-schedules-show.png) |
+_Detailed schedule view with checklist, tools, and generated work orders_
