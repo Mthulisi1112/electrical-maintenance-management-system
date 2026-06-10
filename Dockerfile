@@ -2,7 +2,7 @@ FROM php:8.3-apache
 
 WORKDIR /var/www/html
 
-# Install system dependencies
+# System dependencies
 RUN apt-get update && apt-get install -y \
     git curl zip unzip libzip-dev libpng-dev libjpeg-dev libfreetype6-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
@@ -14,19 +14,11 @@ RUN a2enmod rewrite
 # Install Composer
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
-# Install Node (IMPORTANT FIX)
-RUN curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
-    && apt-get install -y nodejs
-
 # Copy app
 COPY . .
 
 # Install PHP dependencies
 RUN composer install --no-dev --optimize-autoloader
-
-# Install JS dependencies + build frontend
-RUN npm install
-RUN npm run build
 
 # Fix permissions
 RUN chown -R www-data:www-data /var/www/html
@@ -38,6 +30,11 @@ RUN sed -ri -e 's!/var/www/html!${APACHE_DOCUMENT_ROOT}!g' \
     /etc/apache2/sites-available/*.conf \
     /etc/apache2/apache2.conf \
     /etc/apache2/conf-available/*.conf
+
+# FIX Apache MPM conflict (IMPORTANT)
+RUN a2dismod mpm_event || true
+RUN a2dismod mpm_worker || true
+RUN a2enmod mpm_prefork
 
 EXPOSE 80
 
