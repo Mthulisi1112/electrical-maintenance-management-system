@@ -2,6 +2,12 @@ FROM php:8.3-apache
 
 WORKDIR /var/www/html
 
+# FULL RESET of apache modules (THIS IS THE FIX)
+RUN a2dismod mpm_event || true \
+ && a2dismod mpm_worker || true \
+ && a2dismod mpm_prefork || true \
+ && a2enmod mpm_prefork
+
 RUN apt-get update && apt-get install -y \
     git curl zip unzip libzip-dev libpng-dev libjpeg-dev libfreetype6-dev \
     && docker-php-ext-configure gd --with-freetype --with-jpeg \
