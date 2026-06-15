@@ -14,19 +14,22 @@ FROM php:8.3-cli-alpine AS app
 
 WORKDIR /var/www/html
 
-# Install system dependencies
+# Install system dependencies (IMPORTANT: added libpq-dev)
 RUN apk add --no-cache \
     git unzip curl bash \
     libpng-dev libjpeg-turbo-dev freetype-dev libwebp-dev \
-    zlib-dev sqlite-dev oniguruma-dev $PHPIZE_DEPS
+    libpq-dev \
+    zlib-dev oniguruma-dev $PHPIZE_DEPS
 
-# PHP extensions
+# PHP extensions (FIXED: added pdo_pgsql, removed sqlite requirement)
 RUN docker-php-ext-configure gd \
         --with-freetype \
         --with-jpeg \
         --with-webp \
     && docker-php-ext-install -j$(nproc) \
-        gd pdo pdo_sqlite
+        gd \
+        pdo \
+        pdo_pgsql
 
 # Composer
 RUN curl -sS https://getcomposer.org/installer | php -- \
@@ -45,16 +48,16 @@ RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
 # Frontend build
 COPY --from=frontend /app/public/build /var/www/html/public/build
 
-# Ensure Laravel folders exist
-RUN mkdir -p storage bootstrap/cache database \
+# Laravel permissions
+RUN mkdir -p storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# SQLite file (IMPORTANT FIXED PATH)
-RUN touch database/database.sqlite
+# IMPORTANT: REMOVE SQLITE FILE (not needed anymore)
+RUN rm -f database/database.sqlite || true
 
 # Railway port
 ENV PORT=8080
 EXPOSE 8080
 
-# START (FIXED ENTRYPOINT)
+# Start server
 CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t public"]
