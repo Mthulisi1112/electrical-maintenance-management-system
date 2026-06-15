@@ -49,7 +49,8 @@ RUN mkdir -p storage bootstrap/cache database \
     && chmod -R 775 storage bootstrap/cache
 
 # Create sqlite file (IMPORTANT)
-RUN touch database/database.sqlite
+RUN mkdir -p /var/www/html/database \
+    && touch /var/www/html/database/database.sqlite
 
 # Railway port fix (VERY IMPORTANT)
 ENV PORT=8080
