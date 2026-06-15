@@ -12,9 +12,9 @@ RUN npm run build
 # ---------- PHP + Composer ----------
 FROM php:8.3-cli-alpine AS app
 
-WORKDIR /app
+WORKDIR /var/www/html
 
-# Install system deps
+# Install system dependencies
 RUN apk add --no-cache \
     git unzip curl bash \
     libpng-dev libjpeg-turbo-dev freetype-dev libwebp-dev \
@@ -32,30 +32,29 @@ RUN docker-php-ext-configure gd \
 RUN curl -sS https://getcomposer.org/installer | php -- \
     --install-dir=/usr/local/bin --filename=composer
 
+# Copy app
 COPY . .
 
-# Install Laravel deps
+# Install dependencies
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --no-scripts
 
-# Copy frontend build
-COPY --from=frontend /app/public/build /app/public/build
+# Frontend build
+COPY --from=frontend /app/public/build /var/www/html/public/build
 
-# Permissions
+# Ensure Laravel folders exist
 RUN mkdir -p storage bootstrap/cache database \
     && chmod -R 775 storage bootstrap/cache
 
-# Create sqlite file (IMPORTANT)
-RUN mkdir -p /var/www/html/database \
-    && touch /var/www/html/database/database.sqlite
+# SQLite file (IMPORTANT FIXED PATH)
+RUN touch database/database.sqlite
 
-# Railway port fix (VERY IMPORTANT)
+# Railway port
 ENV PORT=8080
-
 EXPOSE 8080
 
-# START SERVER
-CMD ["sh", "-c", "cd public && php -S 0.0.0.0:${PORT:-8080}"]
+# START (FIXED ENTRYPOINT)
+CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t public"]
