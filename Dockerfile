@@ -52,4 +52,4 @@ RUN mkdir -p storage bootstrap/cache \
 EXPOSE 8080
 
 # IMPORTANT: use Railway PORT correctly
-CMD sh -c "php artisan serve --host=0.0.0.0 --port=$PORT"
+CMD sh -c "php -S 0.0.0.0:$PORT -t public"
