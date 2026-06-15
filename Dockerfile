@@ -59,8 +59,6 @@ FROM php:8.3-fpm-alpine
 WORKDIR /var/www/html
 
 RUN apk add --no-cache \
-    nginx \
-    supervisor \
     bash \
     curl \
     git \
@@ -91,4 +89,4 @@ RUN mkdir -p storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
 EXPOSE 80
-CMD php artisan serve --host=0.0.0.0 --port=${PORT:-8080}
+CMD sh -c "php artisan serve --host=0.0.0.0 --port=$PORT"
