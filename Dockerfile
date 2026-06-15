@@ -58,4 +58,4 @@ ENV PORT=8080
 EXPOSE 8080
 
 # START SERVER
-CMD sh -c "php artisan serve --host=0.0.0.0 --port=${PORT}"
+CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t public"]
