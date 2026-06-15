@@ -11,6 +11,7 @@ use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\Admin\UserController; 
 use App\Http\Controllers\ContactController; 
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\DB;
 
 // Static pages - PUBLIC (accessible to everyone, no authentication required)
 Route::view('/privacy-policy', 'static.privacy')->name('privacy-policy');
@@ -79,5 +80,12 @@ Route::middleware(['auth', 'verified'])->group(function () {
         ->name('profile.destroy')
         ->middleware('can:delete-users');
 }); 
+
+Route::get('/db-test', function () {
+    return [
+        'status' => 'ok',
+        'db' => DB::connection()->getDatabaseName()
+    ];
+});
 
 require __DIR__.'/auth.php';
