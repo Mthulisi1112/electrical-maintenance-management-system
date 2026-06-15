@@ -11,11 +11,10 @@ COPY . .
 RUN npm run build
 
 
-# ---------- Stage 2: Composer + PHP Extensions ----------
+# ---------- Stage 2: Composer ----------
 FROM php:8.3-cli-alpine AS vendor
 WORKDIR /app
 
-# System dependencies (FIXED: includes sqlite-dev for pdo_sqlite)
 RUN apk add --no-cache \
     git \
     unzip \
@@ -30,7 +29,6 @@ RUN apk add --no-cache \
     oniguruma-dev \
     $PHPIZE_DEPS
 
-# Install PHP extensions BEFORE composer
 RUN docker-php-ext-configure gd \
         --with-freetype \
         --with-jpeg \
@@ -44,13 +42,15 @@ RUN docker-php-ext-configure gd \
 RUN curl -sS https://getcomposer.org/installer | php -- \
     --install-dir=/usr/local/bin --filename=composer
 
-COPY composer.json composer.lock ./
+# ⚠️ IMPORTANT: copy FULL app so artisan exists
+COPY . .
 
-# Install Laravel dependencies
+# Install dependencies safely (NO scripts = fixes artisan crash)
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-dev \
     --optimize-autoloader \
-    --no-interaction
+    --no-interaction \
+    --no-scripts
 
 
 # ---------- Stage 3: Runtime ----------
@@ -58,7 +58,6 @@ FROM php:8.3-fpm-alpine
 
 WORKDIR /var/www/html
 
-# Runtime system packages
 RUN apk add --no-cache \
     nginx \
     supervisor \
@@ -83,17 +82,13 @@ RUN apk add --no-cache \
         pdo \
         pdo_sqlite
 
-# Copy application
+# Copy app
 COPY . /var/www/html
 COPY --from=vendor /app/vendor /var/www/html/vendor
 COPY --from=frontend /app/public/build /var/www/html/public/build
 
-# Laravel permissions fix
 RUN mkdir -p storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# Expose HTTP port (Railway uses this)
 EXPOSE 80
-
-# Start PHP-FPM
 CMD ["php-fpm", "-F"]
