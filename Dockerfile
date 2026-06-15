@@ -1,4 +1,4 @@
-# ---------- Stage 1: Frontend ----------
+# ---------- Frontend ----------
 FROM node:20-alpine AS frontend
 WORKDIR /app
 
@@ -9,47 +9,52 @@ COPY . .
 RUN npm run build
 
 
-# ---------- Stage 2: Vendor ----------
-FROM php:8.3-cli-alpine AS vendor
+# ---------- PHP + Composer ----------
+FROM php:8.3-cli-alpine AS app
+
 WORKDIR /app
 
+# Install system deps
 RUN apk add --no-cache \
     git unzip curl bash \
     libpng-dev libjpeg-turbo-dev freetype-dev libwebp-dev \
-    zlib-dev sqlite-dev oniguruma-dev $PHPIZE_DEPS \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
-    && docker-php-ext-install gd pdo pdo_sqlite
+    zlib-dev sqlite-dev oniguruma-dev $PHPIZE_DEPS
 
+# PHP extensions
+RUN docker-php-ext-configure gd \
+        --with-freetype \
+        --with-jpeg \
+        --with-webp \
+    && docker-php-ext-install -j$(nproc) \
+        gd pdo pdo_sqlite
+
+# Composer
 RUN curl -sS https://getcomposer.org/installer | php -- \
     --install-dir=/usr/local/bin --filename=composer
 
-COPY composer.json composer.lock ./
-RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
-    --no-dev --optimize-autoloader --no-interaction --no-scripts
-
 COPY . .
 
+# Install Laravel deps
+RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
+    --no-dev \
+    --optimize-autoloader \
+    --no-interaction \
+    --no-scripts
 
-# ---------- Stage 3: Runtime ----------
-FROM php:8.3-cli-alpine
-
-WORKDIR /app
-
-RUN apk add --no-cache \
-    bash curl git sqlite sqlite-dev \
-    libpng-dev libjpeg-turbo-dev freetype-dev libwebp-dev \
-    zlib-dev oniguruma-dev $PHPIZE_DEPS \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg --with-webp \
-    && docker-php-ext-install gd pdo pdo_sqlite
-
-COPY --from=vendor /app /app
+# Copy frontend build
 COPY --from=frontend /app/public/build /app/public/build
 
-# ONLY minimal permissions (no DB creation here)
-RUN mkdir -p storage bootstrap/cache \
+# Permissions
+RUN mkdir -p storage bootstrap/cache database \
     && chmod -R 775 storage bootstrap/cache
+
+# Create sqlite file (IMPORTANT)
+RUN touch database/database.sqlite
+
+# Railway port fix (VERY IMPORTANT)
+ENV PORT=8080
 
 EXPOSE 8080
 
-# IMPORTANT: use Railway PORT correctly
-CMD sh -c "php -S 0.0.0.0:$PORT -t public"
+# START SERVER
+CMD sh -c "php artisan serve --host=0.0.0.0 --port=${PORT}"
