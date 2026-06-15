@@ -1,7 +1,7 @@
 # syntax=docker/dockerfile:1
 
 # ---------- Stage 1: Frontend ----------
-FROM node:20-alpine AS frontend-builder
+FROM node:20-alpine AS frontend
 WORKDIR /app
 
 COPY package*.json ./
@@ -11,47 +11,60 @@ COPY . .
 RUN npm run build
 
 
-# ---------- Stage 2: Composer (FIXED) ----------
-FROM php:8.3-cli-alpine AS composer-builder
+# ---------- Stage 2: PHP Dependencies ----------
+FROM php:8.3-cli-alpine AS vendor
 WORKDIR /app
 
-# Install required PHP extensions for Laravel packages (GD FIX INCLUDED)
 RUN apk add --no-cache \
     git \
     unzip \
-    libpng-dev \
-    libjpeg-turbo-dev \
-    freetype-dev \
-    oniguruma-dev \
-    $PHPIZE_DEPS \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install gd pdo pdo_sqlite
+    curl
 
 COPY composer.json composer.lock ./
-RUN php -m && composer install --no-dev --optimize-autoloader --no-interaction
+RUN curl -sS https://getcomposer.org/installer | php -- --install-dir=/usr/local/bin --filename=composer
+
+RUN composer install --no-dev --optimize-autoloader --no-interaction
 
 
 # ---------- Stage 3: Runtime ----------
-FROM php:8.3-fpm-alpine AS final
+FROM php:8.3-fpm-alpine
 
-# Install system packages + PHP extensions
+WORKDIR /var/www/html
+
+# System dependencies + PHP extensions (FIXED GD)
 RUN apk add --no-cache \
     nginx \
     supervisor \
-    sqlite \
-    sqlite-dev \
-    sqlite-libs \
     bash \
     curl \
     git \
+    sqlite \
+    sqlite-dev \
     libpng-dev \
     libjpeg-turbo-dev \
     freetype-dev \
+    libwebp-dev \
+    zlib-dev \
     oniguruma-dev \
-    && docker-php-ext-configure gd --with-freetype --with-jpeg \
-    && docker-php-ext-install pdo pdo_sqlite gd
+    && docker-php-ext-configure gd \
+        --with-freetype \
+        --with-jpeg \
+        --with-webp \
+    && docker-php-ext-install -j$(nproc) \
+        gd \
+        pdo \
+        pdo_sqlite
 
-# ---------------- NGINX ----------------
+# Copy app
+COPY . /var/www/html
+COPY --from=vendor /app/vendor /var/www/html/vendor
+COPY --from=frontend /app/public/build /var/www/html/public/build
+
+# Laravel permissions
+RUN mkdir -p storage bootstrap/cache \
+    && chmod -R 775 storage bootstrap/cache
+
+# Nginx config
 RUN mkdir -p /etc/nginx/http.d && \
 printf '%s\n' \
 'server {' \
@@ -76,8 +89,7 @@ printf '%s\n' \
 '}' \
 > /etc/nginx/http.d/default.conf
 
-
-# ---------------- SUPERVISOR ----------------
+# Supervisor
 RUN mkdir -p /etc/supervisor.d && \
 printf '%s\n' \
 '[supervisord]' \
@@ -93,19 +105,6 @@ printf '%s\n' \
 'autostart=true' \
 'autorestart=true' \
 > /etc/supervisor.d/laravel.ini
-
-
-# ---------------- APP ----------------
-WORKDIR /var/www/html
-
-COPY --from=composer-builder /app/vendor /var/www/html/vendor
-COPY --from=frontend-builder /app/public/build /var/www/html/public/build
-COPY . /var/www/html
-
-# Permissions (Laravel fix)
-RUN mkdir -p storage bootstrap/cache \
-    && chmod -R 775 storage bootstrap/cache \
-    && chown -R www-data:www-data /var/www/html
 
 EXPOSE 80
 
