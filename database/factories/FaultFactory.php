@@ -23,11 +23,9 @@ class FaultFactory extends Factory
         $downtimeEnd = null;
         $downtimeMinutes = null;
 
-        // For resolved or closed faults, set a random downtime (integer minutes)
         if (in_array($status, ['resolved', 'closed'])) {
             $downtimeEnd = $this->faker->dateTimeBetween($downtimeStart, '+3 days');
-            // Set a random integer between 1 minute and 7 days (10080 minutes)
-            $downtimeMinutes = $this->faker->numberBetween(1, 10080);
+            $downtimeMinutes = $this->faker->numberBetween(1, 10080); // integer minutes
         }
 
         $symptoms = [
@@ -45,49 +43,24 @@ class FaultFactory extends Factory
 
         return [
             'fault_number' => 'FLT-' . $this->faker->unique()->numerify('########') . '-' . $this->faker->numerify('####'),
-
             'asset_id' => Asset::inRandomOrder()->first()?->id ?? Asset::factory(),
-
             'reported_by' => User::inRandomOrder()->first()?->id ?? User::factory(),
-
             'assigned_to' => $this->randomTechnician($this->faker, $status),
-
             'fault_type' => $this->faker->randomElement($faultTypes),
             'severity' => $this->faker->randomElement($severities),
             'status' => $status,
-
             'description' => $this->faker->paragraph(2),
-
-            'symptoms' => json_encode(
-                $this->faker->randomElements($symptoms, rand(2, 4))
-            ),
-
+            'symptoms' => json_encode($this->faker->randomElements($symptoms, rand(2, 4))),
             'images' => null,
-
             'downtime_start' => $downtimeStart,
             'downtime_end' => $downtimeEnd,
-            'downtime_minutes' => $downtimeMinutes, // Always integer or null
-
+            'downtime_minutes' => $downtimeMinutes,
             'root_cause' => in_array($status, ['resolved', 'closed'])
-                ? $this->faker->randomElement([
-                    'Bearing failure',
-                    'Loose connection',
-                    'Overload',
-                    'Insulation failure',
-                    'Voltage spike'
-                ])
+                ? $this->faker->randomElement(['Bearing failure', 'Loose connection', 'Overload', 'Insulation failure', 'Voltage spike'])
                 : null,
-
-            'corrective_actions' => in_array($status, ['resolved', 'closed'])
-                ? $this->faker->paragraph()
-                : null,
-
-            'parts_replaced' => in_array($status, ['resolved', 'closed'])
-                ? json_encode($this->parts($this->faker))
-                : null,
-
+            'corrective_actions' => in_array($status, ['resolved', 'closed']) ? $this->faker->paragraph() : null,
+            'parts_replaced' => in_array($status, ['resolved', 'closed']) ? json_encode($this->parts($this->faker)) : null,
             'requires_followup' => $this->faker->boolean(20),
-
             'created_at' => $downtimeStart,
             'updated_at' => now(),
         ];
@@ -98,12 +71,9 @@ class FaultFactory extends Factory
         if (!in_array($status, ['investigating', 'in_progress', 'resolved', 'closed'])) {
             return null;
         }
-
-        $tech = User::whereHas('role', fn ($q) =>
-            $q->where('slug', 'technician')
-        )->inRandomOrder()->first();
-
-        return $tech?->id;
+        return User::whereHas('role', fn ($q) => $q->where('slug', 'technician'))
+            ->inRandomOrder()
+            ->first()?->id;
     }
 
     private function parts($faker)
@@ -116,39 +86,14 @@ class FaultFactory extends Factory
             ['name' => 'Sensor PT100', 'qty' => 1],
             ['name' => 'Cable 2.5mm²', 'qty' => 5],
         ];
-
         return $faker->randomElements($parts, rand(1, 3));
     }
 
-    // ---------- State methods ----------
-
-    public function reported(): static
-    {
-        return $this->state(fn () => ['status' => 'reported']);
-    }
-
-    public function investigating(): static
-    {
-        return $this->state(fn () => ['status' => 'investigating']);
-    }
-
-    public function resolved(): static
-    {
-        return $this->state(fn () => ['status' => 'resolved']);
-    }
-
-    public function critical(): static
-    {
-        return $this->state(fn () => ['severity' => 'critical']);
-    }
-
-    public function high(): static
-    {
-        return $this->state(fn () => ['severity' => 'high']);
-    }
-
-    public function requiresFollowup(): static
-    {
-        return $this->state(fn () => ['requires_followup' => true]);
-    }
+    // State methods
+    public function reported(): static { return $this->state(fn () => ['status' => 'reported']); }
+    public function investigating(): static { return $this->state(fn () => ['status' => 'investigating']); }
+    public function resolved(): static { return $this->state(fn () => ['status' => 'resolved']); }
+    public function critical(): static { return $this->state(fn () => ['severity' => 'critical']); }
+    public function high(): static { return $this->state(fn () => ['severity' => 'high']); }
+    public function requiresFollowup(): static { return $this->state(fn () => ['requires_followup' => true]); }
 }
