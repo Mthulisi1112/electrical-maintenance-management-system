@@ -25,12 +25,9 @@ class FaultFactory extends Factory
 
         if (in_array($status, ['resolved', 'closed'])) {
             $downtimeEnd = $this->faker->dateTimeBetween($downtimeStart, '+3 days');
-
             $diff = $downtimeStart->diff($downtimeEnd);
-            $downtimeMinutes =
-                ($diff->days * 24 * 60) +
-                ($diff->h * 60) +
-                $diff->i;
+            // ✅ Cast to integer to avoid Postgres "invalid input syntax" error
+            $downtimeMinutes = (int) (($diff->days * 24 * 60) + ($diff->h * 60) + $diff->i);
         }
 
         $symptoms = [
@@ -127,43 +124,31 @@ class FaultFactory extends Factory
 
     public function reported(): static
     {
-        return $this->state(fn () => [
-            'status' => 'reported',
-        ]);
+        return $this->state(fn () => ['status' => 'reported']);
     }
 
     public function investigating(): static
     {
-        return $this->state(fn () => [
-            'status' => 'investigating',
-        ]);
+        return $this->state(fn () => ['status' => 'investigating']);
     }
 
     public function resolved(): static
     {
-        return $this->state(fn () => [
-            'status' => 'resolved',
-        ]);
+        return $this->state(fn () => ['status' => 'resolved']);
     }
 
     public function critical(): static
     {
-        return $this->state(fn () => [
-            'severity' => 'critical',
-        ]);
+        return $this->state(fn () => ['severity' => 'critical']);
     }
 
     public function high(): static
     {
-        return $this->state(fn () => [
-            'severity' => 'high',
-        ]);
+        return $this->state(fn () => ['severity' => 'high']);
     }
 
     public function requiresFollowup(): static
     {
-        return $this->state(fn () => [
-            'requires_followup' => true,
-        ]);
+        return $this->state(fn () => ['requires_followup' => true]);
     }
 }
