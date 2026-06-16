@@ -11,7 +11,9 @@ class FaultSeeder extends Seeder
 {
     public function run(): void
     {
-        $technicians = User::whereHas('role', function($q) {
+        $faker = \Faker\Factory::create();
+
+        $technicians = User::whereHas('role', function ($q) {
             $q->where('slug', 'technician');
         })->get();
 
@@ -23,103 +25,57 @@ class FaultSeeder extends Seeder
 
         $assets = Asset::all();
 
-        // Create reported faults
-        Fault::factory()
-            ->reported()
-            ->count(20)
-            ->create()
-            ->each(function ($fault) use ($assets, $reporters) {
-                $fault->asset_id = $assets->random()->id;
-                $fault->reported_by = $reporters->random()->id;
-                $fault->save();
-            });
+        if ($assets->isEmpty()) {
+            $assets = Asset::factory()->count(20)->create();
+        }
 
-        // Create investigating faults
-        Fault::factory()
-            ->investigating()
-            ->count(15)
-            ->create()
-            ->each(function ($fault) use ($assets, $reporters, $technicians) {
-                $fault->asset_id = $assets->random()->id;
-                $fault->reported_by = $reporters->random()->id;
-                $fault->assigned_to = $technicians->random()->id;
-                $fault->save();
-            });
+        if ($reporters->isEmpty()) {
+            $reporters = User::factory()->count(10)->create();
+        }
 
-        // Create resolved faults
-        Fault::factory()
-            ->resolved()
-            ->count(40)
-            ->create()
-            ->each(function ($fault) use ($assets, $reporters, $technicians) {
-                $fault->asset_id = $assets->random()->id;
-                $fault->reported_by = $reporters->random()->id;
-                $fault->assigned_to = $technicians->random()->id;
-                $fault->save();
-            });
+        // Helper closure to avoid repetition
+        $assignRelations = function ($fault) use ($assets, $reporters, $technicians) {
+            $fault->update([
+                'asset_id' => $assets->random()->id,
+                'reported_by' => $reporters->random()->id,
+                'assigned_to' => $technicians->random()->id,
+            ]);
+        };
 
-        // Create critical faults
-        Fault::factory()
-            ->critical()
-            ->count(10)
-            ->create()
-            ->each(function ($fault) use ($assets, $reporters, $technicians) {
-                $fault->asset_id = $assets->random()->id;
-                $fault->reported_by = $reporters->random()->id;
-                $fault->assigned_to = $technicians->random()->id;
-                $fault->save();
-            });
+        Fault::factory()->reported()->count(20)->create()->each($assignRelations);
 
-        // Create high severity faults
-        Fault::factory()
-            ->high()
-            ->count(15)
-            ->create()
-            ->each(function ($fault) use ($assets, $reporters, $technicians) {
-                $fault->asset_id = $assets->random()->id;
-                $fault->reported_by = $reporters->random()->id;
-                $fault->assigned_to = $technicians->random()->id;
-                $fault->save();
-            });
+        Fault::factory()->investigating()->count(15)->create()->each($assignRelations);
 
-        // Create faults requiring follow-up
-        Fault::factory()
-            ->requiresFollowup()
-            ->count(8)
-            ->create()
-            ->each(function ($fault) use ($assets, $reporters, $technicians) {
-                $fault->asset_id = $assets->random()->id;
-                $fault->reported_by = $reporters->random()->id;
-                $fault->assigned_to = $technicians->random()->id;
-                $fault->save();
-            });
+        Fault::factory()->resolved()->count(40)->create()->each($assignRelations);
 
-        // Create faults for specific assets
+        Fault::factory()->critical()->count(10)->create()->each($assignRelations);
+
+        Fault::factory()->high()->count(15)->create()->each($assignRelations);
+
+        Fault::factory()->requiresFollowup()->count(8)->create()->each($assignRelations);
+
+        // Fault-prone assets
         $faultProneAssets = Asset::where('status', 'faulty')->take(15)->get();
+
         foreach ($faultProneAssets as $asset) {
             Fault::factory()
-                ->count(fake()->numberBetween(1, 3))
+                ->count($faker->numberBetween(1, 3))
                 ->create([
                     'asset_id' => $asset->id,
-                    'reported_by' => $reporters->random()->id,
-                    'assigned_to' => $technicians->random()->id,
+                    'reported_by' => $reporters->random()->id ?? null,
+                    'assigned_to' => $technicians->random()->id ?? null,
                 ]);
         }
 
-        // Create historical faults
+        // Historical faults
         Fault::factory()
             ->count(60)
             ->create([
-                'created_at' => fake()->dateTimeBetween('-1 year', '-1 month'),
-                'downtime_start' => fake()->dateTimeBetween('-1 year', '-1 month'),
-                'downtime_end' => fake()->dateTimeBetween('-11 months', '-1 month'),
+                'created_at' => $faker->dateTimeBetween('-1 year', '-1 month'),
+                'downtime_start' => $faker->dateTimeBetween('-1 year', '-1 month'),
+                'downtime_end' => $faker->dateTimeBetween('-11 months', '-1 month'),
+                'status' => 'closed',
             ])
-            ->each(function ($fault) use ($assets, $reporters, $technicians) {
-                $fault->asset_id = $assets->random()->id;
-                $fault->reported_by = $reporters->random()->id;
-                $fault->assigned_to = $technicians->random()->id;
-                $fault->status = 'closed';
-                $fault->save();
-            });
+            ->each($assignRelations);
     }
 }

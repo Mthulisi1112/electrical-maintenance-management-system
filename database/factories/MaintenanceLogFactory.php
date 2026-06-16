@@ -14,43 +14,45 @@ class MaintenanceLogFactory extends Factory
 
     public function definition(): array
     {
-        // Valid maintenance types only'
+        $faker = $this->faker;
+
         $maintenanceTypes = ['preventive', 'corrective', 'inspection', 'calibration', 'repair'];
         $results = ['successful', 'partial', 'failed', 'deferred'];
-        
+
+        $workOrder = WorkOrder::inRandomOrder()->first();
+
         $measurements = [
-            ['name' => 'Temperature', 'value' => fake()->numberBetween(25, 85), 'unit' => '°C'],
-            ['name' => 'Vibration', 'value' => fake()->randomFloat(2, 0.5, 7.5), 'unit' => 'mm/s'],
-            ['name' => 'Current', 'value' => fake()->numberBetween(10, 400), 'unit' => 'A'],
-            ['name' => 'Voltage', 'value' => fake()->numberBetween(380, 420), 'unit' => 'V'],
-            ['name' => 'Resistance', 'value' => fake()->randomFloat(2, 0.1, 100), 'unit' => 'MΩ'],
-            ['name' => 'Pressure', 'value' => fake()->numberBetween(2, 10), 'unit' => 'bar'],
+            ['name' => 'Temperature', 'value' => $faker->numberBetween(25, 85), 'unit' => '°C'],
+            ['name' => 'Vibration', 'value' => $faker->randomFloat(2, 0.5, 7.5), 'unit' => 'mm/s'],
+            ['name' => 'Current', 'value' => $faker->numberBetween(10, 400), 'unit' => 'A'],
+            ['name' => 'Voltage', 'value' => $faker->numberBetween(380, 420), 'unit' => 'V'],
+            ['name' => 'Resistance', 'value' => $faker->randomFloat(2, 0.1, 100), 'unit' => 'MΩ'],
+            ['name' => 'Pressure', 'value' => $faker->numberBetween(2, 10), 'unit' => 'bar'],
         ];
 
-        // Get a random work order or create one
-        $workOrder = WorkOrder::inRandomOrder()->first();
-        
-        // If no work order exists, we need to handle this gracefully
+        // If NO work order exists (safe fallback)
         if (!$workOrder) {
-            // You might want to return early or handle this differently
-            // For now, we'll return a minimal set and let the seeder handle it
             return [
-                'work_order_id' => null, // This will be set by the seeder
-                'asset_id' => null,
-                'performed_by' => null,
-                'maintenance_type' => fake()->randomElement($maintenanceTypes),
-                'actions_taken' => fake()->paragraphs(3, true),
-                'measurements' => json_encode(fake()->randomElements($measurements, fake()->numberBetween(2, 4))),
-                'parts_used' => json_encode($this->generatePartsUsed()),
-                'time_spent_minutes' => fake()->numberBetween(30, 300),
-                'observations' => fake()->paragraph(),
+                'work_order_id' => null,
+                'asset_id' => Asset::inRandomOrder()->first()?->id,
+                'performed_by' => User::inRandomOrder()->first()?->id,
+
+                'maintenance_type' => $faker->randomElement($maintenanceTypes),
+                'actions_taken' => $faker->paragraph(3),
+
+                'measurements' => json_encode($faker->randomElements($measurements, rand(2, 4))),
+                'parts_used' => json_encode($this->parts($faker)),
+
+                'time_spent_minutes' => $faker->numberBetween(30, 300),
+                'observations' => $faker->paragraph(),
+
                 'attachments' => null,
-                'result' => fake()->randomElement($results),
-                'next_maintenance_date' => fake()->optional(0.6)->dateTimeBetween('+1 month', '+6 months'),
-                'created_at' => fake()->dateTimeBetween('-1 month', 'now'),
-                'updated_at' => function (array $attributes) {
-                    return fake()->dateTimeBetween($attributes['created_at'], 'now');
-                },
+                'result' => $faker->randomElement($results),
+
+                'next_maintenance_date' => $faker->optional(0.6)->dateTimeBetween('+1 month', '+6 months'),
+
+                'created_at' => now(),
+                'updated_at' => now(),
             ];
         }
 
@@ -58,159 +60,113 @@ class MaintenanceLogFactory extends Factory
             'work_order_id' => $workOrder->id,
             'asset_id' => $workOrder->asset_id,
             'performed_by' => $workOrder->technician_id,
-            'maintenance_type' => $this->mapWorkOrderTypeToMaintenanceType($workOrder->type),
-            'actions_taken' => fake()->paragraphs(3, true),
-            'measurements' => json_encode(fake()->randomElements($measurements, fake()->numberBetween(2, 4))),
-            'parts_used' => $workOrder->parts_used ?? json_encode($this->generatePartsUsed()),
-            'time_spent_minutes' => $workOrder->time_spent_minutes ?? fake()->numberBetween(30, 300),
-            'observations' => fake()->paragraph(),
+
+            'maintenance_type' => $this->mapType($workOrder->type),
+
+            'actions_taken' => $faker->paragraph(3),
+
+            'measurements' => json_encode($faker->randomElements($measurements, rand(2, 4))),
+
+            'parts_used' => json_encode($this->parts($faker)),
+
+            'time_spent_minutes' => $workOrder->time_spent_minutes ?? $faker->numberBetween(30, 300),
+
+            'observations' => $faker->paragraph(),
+
             'attachments' => null,
-            'result' => fake()->randomElement($results),
-            'next_maintenance_date' => fake()->optional(0.6)->dateTimeBetween('+1 month', '+6 months'),
-            'created_at' => $workOrder->completed_date ?? fake()->dateTimeBetween('-1 month', 'now'),
-            'updated_at' => function (array $attributes) {
-                return fake()->dateTimeBetween($attributes['created_at'], 'now');
-            },
+
+            'result' => $faker->randomElement($results),
+
+            'next_maintenance_date' => $faker->optional(0.6)->dateTimeBetween('+1 month', '+6 months'),
+
+            'created_at' => $workOrder->completed_date ?? now(),
+            'updated_at' => now(),
         ];
     }
 
-    /**
-     * Map work order type to valid maintenance type
-     */
-    private function mapWorkOrderTypeToMaintenanceType($workOrderType)
+    private function mapType($type): string
     {
-        $mapping = [
+        return match ($type) {
             'preventive' => 'preventive',
-            'corrective' => 'corrective',
-            'emergency' => 'corrective', // Map emergency to corrective
+            'corrective', 'emergency' => 'corrective',
             'inspection' => 'inspection',
-        ];
-
-        return $mapping[$workOrderType] ?? 'preventive';
+            'calibration' => 'calibration',
+            'repair' => 'repair',
+            default => 'preventive',
+        };
     }
 
-    /**
-     * Generate parts used
-     */
-    private function generatePartsUsed()
+    private function parts($faker): array
     {
         $parts = [
-            ['name' => 'Bearing 6304', 'quantity' => 2, 'part_number' => 'BRG-6304'],
-            ['name' => 'Oil Seal', 'quantity' => 1, 'part_number' => 'SL-45-60'],
-            ['name' => 'Grease', 'quantity' => 1, 'part_number' => 'GRS-LG2'],
-            ['name' => 'Filter', 'quantity' => 1, 'part_number' => 'FIL-200'],
-            ['name' => 'Capacitor', 'quantity' => 3, 'part_number' => 'CAP-450uF'],
-            ['name' => 'Contactor', 'quantity' => 1, 'part_number' => 'CTC-9A'],
-            ['name' => 'Fuse 10A', 'quantity' => 2, 'part_number' => 'FUS-10A'],
-            ['name' => 'Terminal Block', 'quantity' => 4, 'part_number' => 'TB-4mm'],
+            ['name' => 'Bearing 6304', 'quantity' => 2],
+            ['name' => 'Oil Seal', 'quantity' => 1],
+            ['name' => 'Grease', 'quantity' => 1],
+            ['name' => 'Filter', 'quantity' => 1],
+            ['name' => 'Contactor', 'quantity' => 1],
+            ['name' => 'Fuse 10A', 'quantity' => 2],
         ];
 
-        return fake()->randomElements($parts, fake()->numberBetween(0, 3));
+        return $faker->randomElements($parts, rand(1, 3));
     }
 
-    /**
-     * Indicate that the maintenance log is successful.
-     */
+    /* States */
+
     public function successful(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'result' => 'successful',
-        ]);
+        return $this->state(fn () => ['result' => 'successful']);
     }
 
-    /**
-     * Indicate that the maintenance log is failed.
-     */
     public function failed(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'result' => 'failed',
-        ]);
+        return $this->state(fn () => ['result' => 'failed']);
     }
 
-    /**
-     * Indicate that the maintenance log is preventive maintenance.
-     */
     public function preventive(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'maintenance_type' => 'preventive',
-        ]);
+        return $this->state(fn () => ['maintenance_type' => 'preventive']);
     }
 
-    /**
-     * Indicate that the maintenance log is corrective maintenance.
-     */
     public function corrective(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'maintenance_type' => 'corrective',
-        ]);
+        return $this->state(fn () => ['maintenance_type' => 'corrective']);
     }
 
-    /**
-     * Indicate that the maintenance log is an inspection.
-     */
     public function inspection(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'maintenance_type' => 'inspection',
-        ]);
+        return $this->state(fn () => ['maintenance_type' => 'inspection']);
     }
 
-    /**
-     * Indicate that the maintenance log is a calibration.
-     */
     public function calibration(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'maintenance_type' => 'calibration',
-        ]);
+        return $this->state(fn () => ['maintenance_type' => 'calibration']);
     }
 
-    /**
-     * Indicate that the maintenance log is a repair.
-     */
     public function repair(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'maintenance_type' => 'repair',
-        ]);
+        return $this->state(fn () => ['maintenance_type' => 'repair']);
     }
 
-    /**
-     * Set the asset for the maintenance log.
-     */
     public function forAsset(Asset $asset): static
     {
-        return $this->state(fn (array $attributes) => [
-            'asset_id' => $asset->id,
-        ]);
+        return $this->state(fn () => ['asset_id' => $asset->id]);
     }
 
-    /**
-     * Set the user who performed the maintenance.
-     */
     public function performedBy(User $user): static
     {
-        return $this->state(fn (array $attributes) => [
-            'performed_by' => $user->id,
-        ]);
+        return $this->state(fn () => ['performed_by' => $user->id]);
     }
 
-    /**
-     * Set the work order for the maintenance log.
-     */
     public function forWorkOrder(WorkOrder $workOrder): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'work_order_id' => $workOrder->id,
             'asset_id' => $workOrder->asset_id,
             'performed_by' => $workOrder->technician_id,
-            'maintenance_type' => $this->mapWorkOrderTypeToMaintenanceType($workOrder->type),
-            'time_spent_minutes' => $workOrder->time_spent_minutes ?? fake()->numberBetween(30, 300),
-            'parts_used' => $workOrder->parts_used,
+            'maintenance_type' => $this->mapType($workOrder->type),
+            'time_spent_minutes' => $workOrder->time_spent_minutes ?? 60,
             'created_at' => $workOrder->completed_date ?? now(),
+            'updated_at' => now(),
         ]);
     }
 }

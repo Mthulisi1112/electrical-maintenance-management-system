@@ -13,102 +13,121 @@ class MaintenanceScheduleFactory extends Factory
 
     public function definition(): array
     {
+        $faker = $this->faker;
+
         $frequencies = ['daily', 'weekly', 'monthly', 'quarterly', 'semi_annual', 'annual'];
-        $frequency = fake()->randomElement($frequencies);
         $priorities = ['low', 'medium', 'high', 'critical'];
-        
-        $startDate = fake()->dateTimeBetween('-6 months', '+3 months');
-        $nextDueDate = $this->calculateNextDueDate($startDate, $frequency);
-        
+
+        $frequency = $faker->randomElement($frequencies);
+        $startDate = $faker->dateTimeBetween('-6 months', '+3 months');
+
+        $nextDueDate = $this->calculateNextDueDate(clone $startDate, $frequency);
+
         $checklistItems = [
-            'Visual inspection of equipment',
-            'Check for unusual noise or vibration',
-            'Measure operating temperature',
-            'Check electrical connections',
-            'Verify proper lubrication',
-            'Inspect for corrosion or damage',
-            'Test safety devices',
-            'Verify proper operation',
-            'Clean equipment surfaces',
+            'Visual inspection',
+            'Check vibration',
+            'Measure temperature',
+            'Check wiring',
+            'Lubrication check',
+            'Inspect corrosion',
+            'Test safety systems',
+            'Clean equipment',
             'Check alignment',
-            'Measure insulation resistance',
-            'Check cooling system',
+            'Insulation test',
+        ];
+
+        $tools = [
+            'Multimeter',
+            'Megger',
+            'Thermal Camera',
+            'Vibration Meter',
+            'Tool Kit',
+            'Lubrication Gun',
+            'Oscilloscope',
+            'Power Analyzer',
         ];
 
         return [
-            'asset_id' => Asset::factory(),
+            'asset_id' => Asset::inRandomOrder()->first()?->id ?? Asset::factory(),
+
             'frequency' => $frequency,
-            'title' => fake()->randomElement(['Routine', 'Preventive', 'Predictive', 'Condition-based']) . ' Maintenance: ' . fake()->words(3, true),
-            'description' => fake()->paragraphs(3, true),
-            'checklist_items' => json_encode(fake()->randomElements($checklistItems, fake()->numberBetween(5, 10))),
-            'required_tools' => json_encode(fake()->randomElements(['Multimeter', 'Megger', 'Thermal Camera', 'Vibration Meter', 'Tool Set', 'Lubrication Gun', 'Oscilloscope', 'Power Analyzer'], fake()->numberBetween(2, 5))),
-            'estimated_duration_minutes' => fake()->numberBetween(30, 480),
+
+            'title' => $faker->randomElement([
+                'Routine Maintenance',
+                'Preventive Maintenance',
+                'Predictive Maintenance',
+                'Condition-Based Maintenance'
+            ]) . ': ' . $faker->words(3, true),
+
+            'description' => $faker->paragraph(),
+
+            'checklist_items' => json_encode(
+                $faker->randomElements($checklistItems, rand(5, 8))
+            ),
+
+            'required_tools' => json_encode(
+                $faker->randomElements($tools, rand(2, 5))
+            ),
+
+            'estimated_duration_minutes' => $faker->numberBetween(30, 480),
+
             'start_date' => $startDate,
+
             'next_due_date' => $nextDueDate,
-            'last_completed_date' => fake()->optional(0.3)->dateTimeBetween('-6 months', 'now'),
-            'is_active' => fake()->boolean(90),
-            'priority' => fake()->randomElement($priorities),
-            'created_by' => User::factory(),
-            'created_at' => fake()->dateTimeBetween('-1 year', 'now'),
-            'updated_at' => function (array $attributes) {
-                return fake()->dateTimeBetween($attributes['created_at'], 'now');
-            },
+
+            'last_completed_date' => $faker->optional(0.3)
+                ->dateTimeBetween('-6 months', 'now'),
+
+            'is_active' => $faker->boolean(90),
+
+            'priority' => $faker->randomElement($priorities),
+
+            // SAFE fallback instead of breaking factory dependency
+            'created_by' => User::inRandomOrder()->first()?->id ?? User::factory(),
+
+            'created_at' => $faker->dateTimeBetween('-1 year', 'now'),
+            'updated_at' => now(),
         ];
     }
 
     private function calculateNextDueDate($startDate, $frequency)
     {
         $date = clone $startDate;
-        
-        switch ($frequency) {
-            case 'daily':
-                return $date->modify('+1 day');
-            case 'weekly':
-                return $date->modify('+1 week');
-            case 'monthly':
-                return $date->modify('+1 month');
-            case 'quarterly':
-                return $date->modify('+3 months');
-            case 'semi_annual':
-                return $date->modify('+6 months');
-            case 'annual':
-                return $date->modify('+1 year');
-            default:
-                return $date->modify('+1 month');
-        }
+
+        return match ($frequency) {
+            'daily' => $date->modify('+1 day'),
+            'weekly' => $date->modify('+1 week'),
+            'monthly' => $date->modify('+1 month'),
+            'quarterly' => $date->modify('+3 months'),
+            'semi_annual' => $date->modify('+6 months'),
+            'annual' => $date->modify('+1 year'),
+            default => $date->modify('+1 month'),
+        };
     }
 
     public function active(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'is_active' => true,
-        ]);
+        return $this->state(fn () => ['is_active' => true]);
     }
 
     public function inactive(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'is_active' => false,
-        ]);
+        return $this->state(fn () => ['is_active' => false]);
     }
 
     public function highPriority(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'priority' => 'high',
-        ]);
+        return $this->state(fn () => ['priority' => 'high']);
     }
 
     public function critical(): static
     {
-        return $this->state(fn (array $attributes) => [
-            'priority' => 'critical',
-        ]);
+        return $this->state(fn () => ['priority' => 'critical']);
     }
 
     public function daily(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'frequency' => 'daily',
             'next_due_date' => now()->addDay(),
         ]);
@@ -116,7 +135,7 @@ class MaintenanceScheduleFactory extends Factory
 
     public function weekly(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'frequency' => 'weekly',
             'next_due_date' => now()->addWeek(),
         ]);
@@ -124,7 +143,7 @@ class MaintenanceScheduleFactory extends Factory
 
     public function monthly(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'frequency' => 'monthly',
             'next_due_date' => now()->addMonth(),
         ]);

@@ -11,96 +11,98 @@ class UserSeeder extends Seeder
 {
     public function run(): void
     {
-        // Get or create roles
-        $adminRole = Role::where('slug', 'admin')->first();
-        $supervisorRole = Role::where('slug', 'maintenance-supervisor')->first();
-        $technicianRole = Role::where('slug', 'technician')->first();
-        $auditorRole = Role::where('slug', 'auditor')->first();
+        // =========================
+        // FETCH ROLES SAFELY
+        // =========================
+        $roles = Role::all()->keyBy('slug');
 
-        // Create or update admin users
-        $adminEmails = ['admin@emms.com', 'test.admin@emms.com'];
-        foreach ($adminEmails as $index => $email) {
-            User::updateOrCreate(
-                ['email' => $email],
-                [
-                    'name' => $index === 0 ? 'Admin User' : 'Test Admin',
-                    'password' => Hash::make('password'),
-                    'employee_id' => 'EMP-ADMIN-00' . ($index + 1),
-                    'department' => 'Administration',
-                    'phone' => fake()->phoneNumber(),
-                    'is_active' => true,
-                    'role_id' => $adminRole?->id,
-                    'email_verified_at' => now(),
-                ]
-            );
+        $adminRole = $roles['admin'] ?? null;
+        $supervisorRole = $roles['maintenance-supervisor'] ?? null;
+        $technicianRole = $roles['technician'] ?? null;
+        $auditorRole = $roles['auditor'] ?? null;
+
+        if (!$adminRole || !$supervisorRole || !$technicianRole || !$auditorRole) {
+            throw new \Exception("One or more roles are missing. Run RoleSeeder first.");
         }
 
-        // Create or update supervisor users
-        $supervisorEmails = ['supervisor@emms.com', 'test.supervisor@emms.com'];
-        foreach ($supervisorEmails as $index => $email) {
-            User::updateOrCreate(
-                ['email' => $email],
-                [
-                    'name' => $index === 0 ? 'Maintenance Supervisor' : 'Test Supervisor',
-                    'password' => Hash::make('password'),
-                    'employee_id' => 'EMP-SUP-00' . ($index + 1),
-                    'department' => 'Maintenance',
-                    'phone' => fake()->phoneNumber(),
-                    'is_active' => true,
-                    'role_id' => $supervisorRole?->id,
-                    'email_verified_at' => now(),
-                ]
-            );
-        }
+        // =========================
+        // SIMPLE PHONE GENERATOR
+        // =========================
+        $phone = fn () => '07' . rand(100000000, 999999999);
 
-        // Create or update technician users
-        $technicianEmails = ['technician@emms.com', 'test.technician@emms.com'];
-        foreach ($technicianEmails as $index => $email) {
-            User::updateOrCreate(
-                ['email' => $email],
-                [
-                    'name' => $index === 0 ? 'Technician User' : 'Test Technician',
-                    'password' => Hash::make('password'),
-                    'employee_id' => 'EMP-TECH-00' . ($index + 1),
-                    'department' => 'Maintenance',
-                    'phone' => fake()->phoneNumber(),
-                    'is_active' => true,
-                    'role_id' => $technicianRole?->id,
-                    'email_verified_at' => now(),
-                ]
-            );
-        }
+        // =========================
+        // ADMIN USERS
+        // =========================
+        $this->createUsers([
+            ['email' => 'admin@emms.com', 'name' => 'Admin User', 'emp' => 'EMP-ADMIN-001'],
+            ['email' => 'test.admin@emms.com', 'name' => 'Test Admin', 'emp' => 'EMP-ADMIN-002'],
+        ], $adminRole->id, $phone, 'Administration');
 
-        // Create or update auditor users
-        $auditorEmails = ['auditor@emms.com', 'test.auditor@emms.com'];
-        foreach ($auditorEmails as $index => $email) {
-            User::updateOrCreate(
-                ['email' => $email],
-                [
-                    'name' => $index === 0 ? 'Auditor User' : 'Test Auditor',
-                    'password' => Hash::make('password'),
-                    'employee_id' => 'EMP-AUD-00' . ($index + 1),
-                    'department' => 'Audit',
-                    'phone' => fake()->phoneNumber(),
-                    'is_active' => true,
-                    'role_id' => $auditorRole?->id,
-                    'email_verified_at' => now(),
-                ]
-            );
-        }
+        // =========================
+        // SUPERVISORS
+        // =========================
+        $this->createUsers([
+            ['email' => 'supervisor@emms.com', 'name' => 'Maintenance Supervisor', 'emp' => 'EMP-SUP-001'],
+            ['email' => 'test.supervisor@emms.com', 'name' => 'Test Supervisor', 'emp' => 'EMP-SUP-002'],
+        ], $supervisorRole->id, $phone, 'Maintenance');
 
-        // Create additional random users only if we don't have many
-        $existingUserCount = User::count();
-        if ($existingUserCount < 30) {
+        // =========================
+        // TECHNICIANS
+        // =========================
+        $this->createUsers([
+            ['email' => 'technician@emms.com', 'name' => 'Technician User', 'emp' => 'EMP-TECH-001'],
+            ['email' => 'test.technician@emms.com', 'name' => 'Test Technician', 'emp' => 'EMP-TECH-002'],
+        ], $technicianRole->id, $phone, 'Maintenance');
+
+        // =========================
+        // AUDITORS
+        // =========================
+        $this->createUsers([
+            ['email' => 'auditor@emms.com', 'name' => 'Auditor User', 'emp' => 'EMP-AUD-001'],
+            ['email' => 'test.auditor@emms.com', 'name' => 'Test Auditor', 'emp' => 'EMP-AUD-002'],
+        ], $auditorRole->id, $phone, 'Audit');
+
+        // =========================
+        // RANDOM USERS
+        // =========================
+        if (User::count() < 30) {
             User::factory()
-                ->count(30 - $existingUserCount)
+                ->count(30 - User::count())
                 ->create()
-                ->each(function ($user) use ($adminRole, $supervisorRole, $technicianRole, $auditorRole) {
-                    // Assign random role except admin for safety
-                    $roles = [$supervisorRole?->id, $technicianRole?->id, $auditorRole?->id];
-                    $user->role_id = $roles[array_rand($roles)];
-                    $user->save();
+                ->each(function ($user) use ($roles) {
+                    $rolePool = array_filter([
+                        $roles['supervisor'] ?? null,
+                        $roles['technician'] ?? null,
+                        $roles['auditor'] ?? null,
+                    ]);
+
+                    if ($rolePool) {
+                        $user->role_id = $rolePool[array_rand($rolePool)]->id;
+                        $user->save();
+                    }
                 });
+        }
+    }
+
+    /**
+     * Reusable user creator (clean + DRY)
+     */
+    private function createUsers(array $users, int $roleId, callable $phone, string $department): void
+    {
+        foreach ($users as $u) {
+            User::updateOrCreate(
+                ['email' => $u['email']],
+                [
+                    'name' => $u['name'],
+                    'password' => Hash::make('password'),
+                    'employee_id' => $u['emp'],
+                    'department' => $department,
+                    'phone' => $phone(),
+                    'is_active' => true,
+                    'role_id' => $roleId,
+                    'email_verified_at' => now(),
+                ]
+            );
         }
     }
 }

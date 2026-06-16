@@ -6,7 +6,6 @@ use App\Models\Fault;
 use App\Models\Asset;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Carbon\Carbon;
 
 class FaultFactory extends Factory
 {
@@ -17,253 +16,154 @@ class FaultFactory extends Factory
         $faultTypes = ['trip', 'overload', 'short_circuit', 'earth_fault', 'overheating', 'mechanical', 'other'];
         $severities = ['low', 'medium', 'high', 'critical'];
         $statuses = ['reported', 'investigating', 'in_progress', 'resolved', 'closed'];
-        
-        $status = fake()->randomElement($statuses);
-        
-        // Create DateTime objects for timestamps
-        $downtimeStart = fake()->dateTimeBetween('-1 week', 'now');
+
+        $status = $this->faker->randomElement($statuses);
+
+        $downtimeStart = $this->faker->dateTimeBetween('-1 week', 'now');
         $downtimeEnd = null;
         $downtimeMinutes = null;
-        
+
         if (in_array($status, ['resolved', 'closed'])) {
-            $downtimeEnd = fake()->dateTimeBetween($downtimeStart, '+3 days');
-            
-            // Calculate minutes using DateTime diff
-            $interval = $downtimeStart->diff($downtimeEnd);
-            $downtimeMinutes = ($interval->days * 24 * 60) + ($interval->h * 60) + $interval->i;
+            $downtimeEnd = $this->faker->dateTimeBetween($downtimeStart, '+3 days');
+
+            $diff = $downtimeStart->diff($downtimeEnd);
+            $downtimeMinutes =
+                ($diff->days * 24 * 60) +
+                ($diff->h * 60) +
+                $diff->i;
         }
-        
+
         $symptoms = [
-            'Unusual noise from equipment',
+            'Unusual noise',
             'Equipment not starting',
-            'Overheating detected',
-            'Vibration levels high',
-            'Error code on display',
-            'Tripping intermittently',
-            'Smoke or burning smell',
-            'Low output/performance',
+            'Overheating',
+            'High vibration',
+            'Error code display',
+            'Intermittent tripping',
+            'Burning smell',
+            'Low performance',
             'Automatic shutdown',
-            'Control system alarm'
+            'Alarm triggered'
         ];
 
         return [
-            'fault_number' => fake()->unique()->regexify('FLT-[0-9]{8}-[0-9]{4}'),
-            'asset_id' => $this->getRandomAssetId(),
-            'reported_by' => $this->getRandomReporterId(),
-            'assigned_to' => $this->getRandomTechnicianId($status),
-            'fault_type' => fake()->randomElement($faultTypes),
-            'severity' => fake()->randomElement($severities),
+            'fault_number' => 'FLT-' . $this->faker->unique()->numerify('########') . '-' . $this->faker->numerify('####'),
+
+            'asset_id' => Asset::inRandomOrder()->first()?->id ?? Asset::factory(),
+
+            'reported_by' => User::inRandomOrder()->first()?->id ?? User::factory(),
+
+            'assigned_to' => $this->randomTechnician($this->faker, $status),
+
+            'fault_type' => $this->faker->randomElement($faultTypes),
+            'severity' => $this->faker->randomElement($severities),
             'status' => $status,
-            'description' => fake()->paragraphs(2, true),
-            'symptoms' => json_encode(fake()->randomElements($symptoms, fake()->numberBetween(2, 4))),
+
+            'description' => $this->faker->paragraph(2),
+
+            'symptoms' => json_encode(
+                $this->faker->randomElements($symptoms, rand(2, 4))
+            ),
+
             'images' => null,
+
             'downtime_start' => $downtimeStart,
             'downtime_end' => $downtimeEnd,
             'downtime_minutes' => $downtimeMinutes,
-            'root_cause' => in_array($status, ['resolved', 'closed']) ? $this->getRandomRootCause() : null,
-            'corrective_actions' => in_array($status, ['resolved', 'closed']) ? fake()->paragraph() : null,
-            'parts_replaced' => in_array($status, ['resolved', 'closed']) ? json_encode($this->generatePartsReplaced()) : null,
-            'requires_followup' => fake()->boolean(20),
+
+            'root_cause' => in_array($status, ['resolved', 'closed'])
+                ? $this->faker->randomElement([
+                    'Bearing failure',
+                    'Loose connection',
+                    'Overload',
+                    'Insulation failure',
+                    'Voltage spike'
+                ])
+                : null,
+
+            'corrective_actions' => in_array($status, ['resolved', 'closed'])
+                ? $this->faker->paragraph()
+                : null,
+
+            'parts_replaced' => in_array($status, ['resolved', 'closed'])
+                ? json_encode($this->parts($this->faker))
+                : null,
+
+            'requires_followup' => $this->faker->boolean(20),
+
             'created_at' => $downtimeStart,
-            'updated_at' => $downtimeEnd ?? fake()->dateTimeBetween($downtimeStart, 'now'),
+            'updated_at' => now(),
         ];
     }
 
-    /**
-     * Get a random asset ID
-     */
-    private function getRandomAssetId()
+    private function randomTechnician($faker, $status)
     {
-        $asset = Asset::inRandomOrder()->first();
-        return $asset ? $asset->id : Asset::factory()->create()->id;
-    }
-
-    /**
-     * Get a random reporter ID
-     */
-    private function getRandomReporterId()
-    {
-        $reporter = User::whereHas('role', function($q) {
-            $q->whereIn('slug', ['technician', 'maintenance-supervisor']);
-        })->inRandomOrder()->first();
-
-        if (!$reporter) {
-            $reporter = User::factory()->technician()->create();
+        if (!in_array($status, ['investigating', 'in_progress', 'resolved', 'closed'])) {
+            return null;
         }
 
-        return $reporter->id;
+        $tech = User::whereHas('role', fn ($q) =>
+            $q->where('slug', 'technician')
+        )->inRandomOrder()->first();
+
+        return $tech?->id;
     }
 
-    /**
-     * Get a random technician ID for assignment
-     */
-    private function getRandomTechnicianId($status)
-    {
-        if (in_array($status, ['investigating', 'in_progress', 'resolved', 'closed']) && fake()->boolean(70)) {
-            $technician = User::whereHas('role', function($q) {
-                $q->where('slug', 'technician');
-            })->inRandomOrder()->first();
-
-            if ($technician) {
-                return $technician->id;
-            }
-        }
-
-        return null;
-    }
-
-    /**
-     * Get random root cause
-     */
-    private function getRandomRootCause()
-    {
-        $causes = [
-            'Worn out bearing',
-            'Loose connection',
-            'Insulation failure',
-            'Overload condition',
-            'Phase imbalance',
-            'Contactor failure',
-            'Sensor malfunction',
-            'Cooling system failure',
-            'Voltage spike',
-            'Mechanical jamming',
-            'Software glitch',
-            'Communication error',
-            'Power supply issue',
-            'Environmental factor',
-            'Normal wear and tear'
-        ];
-
-        return fake()->randomElement($causes);
-    }
-
-    /**
-     * Generate parts replaced
-     */
-    private function generatePartsReplaced()
+    private function parts($faker)
     {
         $parts = [
-            ['name' => 'Bearing 6205', 'quantity' => 2, 'part_number' => 'BRG-6205'],
-            ['name' => 'Contactor 9A', 'quantity' => 1, 'part_number' => 'CTC-9A-230'],
-            ['name' => 'Fuse 10A', 'quantity' => 3, 'part_number' => 'FUS-10A-Fast'],
-            ['name' => 'Capacitor 50uF', 'quantity' => 1, 'part_number' => 'CAP-50uF-450V'],
-            ['name' => 'Temperature Sensor', 'quantity' => 1, 'part_number' => 'SNS-PT100'],
-            ['name' => 'Cable 2.5mm²', 'quantity' => 5, 'part_number' => 'CAB-2.5-RED'],
-            ['name' => 'Terminal Block', 'quantity' => 4, 'part_number' => 'TB-4mm-12way'],
-            ['name' => 'Relay 24V', 'quantity' => 2, 'part_number' => 'REL-24V-4PDT'],
-            ['name' => 'PCB Board', 'quantity' => 1, 'part_number' => 'PCB-CNTRL-V2'],
-            ['name' => 'Cooling Fan', 'quantity' => 1, 'part_number' => 'FAN-120mm-24V'],
+            ['name' => 'Bearing 6205', 'qty' => 2],
+            ['name' => 'Contactor 9A', 'qty' => 1],
+            ['name' => 'Fuse 10A', 'qty' => 3],
+            ['name' => 'Capacitor 50uF', 'qty' => 1],
+            ['name' => 'Sensor PT100', 'qty' => 1],
+            ['name' => 'Cable 2.5mm²', 'qty' => 5],
         ];
 
-        return fake()->randomElements($parts, fake()->numberBetween(0, 3));
+        return $faker->randomElements($parts, rand(1, 3));
     }
 
-    /**
-     * Indicate that the fault is reported.
-     */
+    // ---------- State methods ----------
+
     public function reported(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'status' => 'reported',
-            'assigned_to' => null,
-            'downtime_end' => null,
-            'downtime_minutes' => null,
-            'root_cause' => null,
-            'corrective_actions' => null,
-            'parts_replaced' => null,
         ]);
     }
 
-    /**
-     * Indicate that the fault is being investigated.
-     */
     public function investigating(): static
     {
-        return $this->state(function (array $attributes) {
-            return [
-                'status' => 'investigating',
-                'downtime_end' => null,
-                'downtime_minutes' => null,
-                'root_cause' => null,
-                'corrective_actions' => null,
-                'parts_replaced' => null,
-            ];
-        });
+        return $this->state(fn () => [
+            'status' => 'investigating',
+        ]);
     }
 
-    /**
-     * Indicate that the fault is resolved.
-     */
     public function resolved(): static
     {
-        return $this->state(function (array $attributes) {
-            $downtimeStart = $attributes['downtime_start'] ?? fake()->dateTimeBetween('-5 days', '-2 days');
-            $downtimeEnd = fake()->dateTimeBetween($downtimeStart, 'now');
-            
-            // Calculate minutes
-            $interval = $downtimeStart->diff($downtimeEnd);
-            $downtimeMinutes = ($interval->days * 24 * 60) + ($interval->h * 60) + $interval->i;
-            
-            return [
-                'status' => 'resolved',
-                'downtime_end' => $downtimeEnd,
-                'downtime_minutes' => $downtimeMinutes,
-                'root_cause' => $this->getRandomRootCause(),
-                'corrective_actions' => fake()->paragraph(),
-                'parts_replaced' => json_encode($this->generatePartsReplaced()),
-            ];
-        });
+        return $this->state(fn () => [
+            'status' => 'resolved',
+        ]);
     }
 
-    /**
-     * Indicate that the fault is critical.
-     */
     public function critical(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'severity' => 'critical',
         ]);
     }
 
-    /**
-     * Indicate that the fault is high severity.
-     */
     public function high(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'severity' => 'high',
         ]);
     }
 
-    /**
-     * Indicate that the fault requires follow-up.
-     */
     public function requiresFollowup(): static
     {
-        return $this->state(fn (array $attributes) => [
+        return $this->state(fn () => [
             'requires_followup' => true,
-        ]);
-    }
-
-    /**
-     * Set the asset for the fault.
-     */
-    public function forAsset(Asset $asset): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'asset_id' => $asset->id,
-        ]);
-    }
-
-    /**
-     * Assign the fault to a technician.
-     */
-    public function assignedTo(User $technician): static
-    {
-        return $this->state(fn (array $attributes) => [
-            'assigned_to' => $technician->id,
-            'status' => 'investigating',
         ]);
     }
 }

@@ -12,13 +12,13 @@ class WorkOrderSeeder extends Seeder
 {
     public function run(): void
     {
-        $technicians = User::whereHas('role', function($q) {
-            $q->where('slug', 'technician');
-        })->get();
+        $technicians = User::whereHas('role', fn($q) =>
+            $q->where('slug', 'technician')
+        )->get();
 
-        $supervisors = User::whereHas('role', function($q) {
-            $q->whereIn('slug', ['admin', 'maintenance-supervisor']);
-        })->get();
+        $supervisors = User::whereHas('role', fn($q) =>
+            $q->whereIn('slug', ['admin', 'maintenance-supervisor'])
+        )->get();
 
         if ($technicians->isEmpty()) {
             $technicians = User::factory()->technician()->count(10)->create();
@@ -29,102 +29,66 @@ class WorkOrderSeeder extends Seeder
         }
 
         $assets = Asset::all();
+        if ($assets->isEmpty()) {
+            $assets = Asset::factory()->count(20)->create();
+        }
+
         $schedules = MaintenanceSchedule::all();
 
-        // Create pending work orders
-        WorkOrder::factory()
-            ->pending()
-            ->count(30)
-            ->create([
-                'supervisor_id' => $supervisors->random()->id,
-            ])
-            ->each(function ($workOrder) use ($technicians, $assets, $schedules) {
-                $workOrder->technician_id = $technicians->random()->id;
-                $workOrder->asset_id = $assets->random()->id;
-                $workOrder->maintenance_schedule_id = $schedules->isNotEmpty() ? $schedules->random()->id : null;
-                $workOrder->save();
-            });
+        $random = fn($collection) => $collection->random()->id;
 
-        // Create in-progress work orders
-        WorkOrder::factory()
-            ->inProgress()
-            ->count(20)
-            ->create([
-                'supervisor_id' => $supervisors->random()->id,
-            ])
-            ->each(function ($workOrder) use ($technicians, $assets) {
-                $workOrder->technician_id = $technicians->random()->id;
-                $workOrder->asset_id = $assets->random()->id;
-                $workOrder->save();
-            });
+        $make = function (array $overrides = []) use (
+            $technicians,
+            $supervisors,
+            $assets,
+            $schedules,
+            $random
+        ) {
+            return array_merge([
+                'asset_id' => $random($assets),
+                'technician_id' => $random($technicians),
+                'supervisor_id' => $random($supervisors),
+                'maintenance_schedule_id' => $schedules->isNotEmpty()
+                    ? $random($schedules)
+                    : null,
+            ], $overrides);
+        };
 
-        // Create completed work orders
-        WorkOrder::factory()
-            ->completed()
-            ->count(40)
-            ->create([
-                'supervisor_id' => $supervisors->random()->id,
-            ])
-            ->each(function ($workOrder) use ($technicians, $assets) {
-                $workOrder->technician_id = $technicians->random()->id;
-                $workOrder->asset_id = $assets->random()->id;
-                $workOrder->save();
-            });
+        // Pending
+        WorkOrder::factory()->count(30)->pending()->create($make());
 
-        // Create verified work orders
-        WorkOrder::factory()
-            ->verified()
-            ->count(50)
-            ->create([
-                'supervisor_id' => $supervisors->random()->id,
-            ])
-            ->each(function ($workOrder) use ($technicians, $assets) {
-                $workOrder->technician_id = $technicians->random()->id;
-                $workOrder->asset_id = $assets->random()->id;
-                $workOrder->save();
-            });
+        // In Progress
+        WorkOrder::factory()->count(20)->inProgress()->create($make());
 
-        // Create emergency work orders
-        WorkOrder::factory()
-            ->emergency()
-            ->count(15)
-            ->create([
-                'supervisor_id' => $supervisors->random()->id,
-            ])
-            ->each(function ($workOrder) use ($technicians, $assets) {
-                $workOrder->technician_id = $technicians->random()->id;
-                $workOrder->asset_id = $assets->random()->id;
-                $workOrder->save();
-            });
+        // Completed
+        WorkOrder::factory()->count(40)->completed()->create($make());
 
-        // Create work orders for specific assets
+        // Verified
+        WorkOrder::factory()->count(50)->verified()->create($make());
+
+        // Emergency
+        WorkOrder::factory()->count(15)->emergency()->create($make());
+
+        // Preventive per asset
         $criticalAssets = Asset::where('status', 'operational')->take(20)->get();
         foreach ($criticalAssets as $asset) {
             WorkOrder::factory()
-                ->preventive()
                 ->count(3)
-                ->create([
+                ->preventive()
+                ->create($make([
                     'asset_id' => $asset->id,
-                    'supervisor_id' => $supervisors->random()->id,
-                    'technician_id' => $technicians->random()->id,
-                ]);
+                ]));
         }
 
-        // Create historical work orders (older dates)
+        // Historical verified
         WorkOrder::factory()
-            ->verified()
             ->count(100)
-            ->create([
-                'supervisor_id' => $supervisors->random()->id,
-                'created_at' => fake()->dateTimeBetween('-6 months', '-1 month'),
-                'scheduled_date' => fake()->dateTimeBetween('-6 months', '-1 month'),
-                'completed_date' => fake()->dateTimeBetween('-5 months', '-1 month'),
-                'verified_at' => fake()->dateTimeBetween('-5 months', '-1 month'),
-            ])
-            ->each(function ($workOrder) use ($technicians, $assets) {
-                $workOrder->technician_id = $technicians->random()->id;
-                $workOrder->asset_id = $assets->random()->id;
-                $workOrder->save();
-            });
+            ->verified()
+            ->create($make([
+                'created_at' => now()->subMonths(rand(2, 6)),
+                'scheduled_date' => now()->subMonths(rand(2, 6)),
+                'completed_date' => now()->subMonths(rand(1, 5)),
+                'verified_at' => now()->subMonths(rand(1, 5)),
+            ]));
     }
 }
