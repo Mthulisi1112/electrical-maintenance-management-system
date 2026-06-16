@@ -36,8 +36,15 @@ class Fault extends Model
         'parts_replaced' => 'array',
         'downtime_start' => 'datetime',
         'downtime_end' => 'datetime',
+        'downtime_minutes' => 'integer',   // ✅ force integer
         'requires_followup' => 'boolean',
     ];
+
+    // ✅ Mutator to guarantee integer (even if factory sends float)
+    public function setDowntimeMinutesAttribute($value)
+    {
+        $this->attributes['downtime_minutes'] = $value !== null ? (int) $value : null;
+    }
 
     protected static function boot()
     {
@@ -48,8 +55,10 @@ class Fault extends Model
         });
 
         static::saving(function ($fault) {
+            // Recalculate downtime minutes from start/end if both are set
             if ($fault->downtime_start && $fault->downtime_end) {
                 $fault->downtime_minutes = $fault->downtime_start->diffInMinutes($fault->downtime_end);
+                // diffInMinutes returns int, but mutator above will also cast it
             }
         });
     }
