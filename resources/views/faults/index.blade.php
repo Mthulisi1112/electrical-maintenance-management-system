@@ -32,11 +32,6 @@
                             Report Fault
                         </a>
                     </div>
-                @else
-                    {{-- Debug info for when policy fails --}}
-                    <div class="bg-red-100 p-2 mb-2 text-xs rounded">
-                        Debug: Cannot create fault. User role = {{ Auth::user()->role->name ?? 'No role' }}
-                    </div>
                 @endcan
             </div>
 
