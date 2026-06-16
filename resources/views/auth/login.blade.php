@@ -11,12 +11,12 @@
             </div>
         </div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
-            Welcome back
+            Welcome To Emms Electrical
         </h2>
         <p class="mt-2 text-center text-sm text-gray-600">
             Don't have an account?
             <a href="{{ route('register') }}" class="font-medium text-blue-600 hover:text-blue-500">
-                Sign up for free
+                Sign up here
             </a>
         </p>
     </div>
