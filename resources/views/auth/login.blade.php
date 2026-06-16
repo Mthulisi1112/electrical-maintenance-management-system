@@ -113,22 +113,42 @@
                 </div>
             </form>
 
-          {{-- -  <!-- Demo Credentials (Optional) -->
+            {{-- Demo Credentials with click-to-fill --}}
             <div class="mt-6 pt-6 border-t border-gray-200">
-                <p class="text-xs text-center text-gray-500 mb-3">Demo Credentials</p>
-                <div class="grid grid-cols-2 gap-2 text-xs text-gray-600">
-                    <div class="p-2 bg-gray-50 rounded-lg">
-                        <p class="font-medium">Admin</p>
-                        <p>admin@emms.com</p>
-                        <p class="text-gray-400">••••••••</p>
+                <p class="text-xs text-center text-gray-500 mb-3">🚀 Demo Credentials (click to fill)</p>
+                <div class="grid grid-cols-2 gap-3">
+                    {{-- Admin --}}
+                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition"
+                         onclick="document.getElementById('email').value='admin@emms.com'; document.getElementById('password').value='password';">
+                        <p class="text-sm font-semibold text-blue-800">Administrator</p>
+                        <p class="text-xs text-gray-700 mt-1">admin@emms.com</p>
+                        <p class="text-xs text-gray-500">password</p>
                     </div>
-                    <div class="p-2 bg-gray-50 rounded-lg">
-                        <p class="font-medium">Supervisor</p>
-                        <p>supervisor@emms.com</p>
-                        <p class="text-gray-400">••••••••</p>
+                    {{-- Technician --}}
+                    <div class="p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition"
+                         onclick="document.getElementById('email').value='technician@emms.com'; document.getElementById('password').value='password';">
+                        <p class="text-sm font-semibold text-green-800">Technician</p>
+                        <p class="text-xs text-gray-700 mt-1">technician@emms.com</p>
+                        <p class="text-xs text-gray-500">password</p>
+                    </div>
+                    {{-- Supervisor --}}
+                    <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-100 transition"
+                         onclick="document.getElementById('email').value='supervisor@emms.com'; document.getElementById('password').value='password';">
+                        <p class="text-sm font-semibold text-yellow-800">Supervisor</p>
+                        <p class="text-xs text-gray-700 mt-1">supervisor@emms.com</p>
+                        <p class="text-xs text-gray-500">password</p>
+                    </div>
+                    {{-- Auditor --}}
+                    <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg cursor-pointer hover:bg-purple-100 transition"
+                         onclick="document.getElementById('email').value='auditor@emms.com'; document.getElementById('password').value='password';">
+                        <p class="text-sm font-semibold text-purple-800">Auditor</p>
+                        <p class="text-xs text-gray-700 mt-1">auditor@emms.com</p>
+                        <p class="text-xs text-gray-500">password</p>
                     </div>
                 </div>
-            </div> --}} 
+                <p class="mt-2 text-xs text-center text-gray-400">Click any card to auto‑fill the login fields</p>
+            </div>
+
         </div>
     </div>
 </div>
