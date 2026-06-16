@@ -34,8 +34,8 @@ RUN curl -sS https://getcomposer.org/installer | php -- \
 
 COPY . .
 
+# ✅ Install ALL dependencies (including dev) for seeding
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
-    --no-dev \
     --optimize-autoloader \
     --no-interaction \
     --no-scripts
@@ -50,5 +50,5 @@ RUN rm -f database/database.sqlite || true
 ENV PORT=8080
 EXPOSE 8080
 
-
+# ✅ Keep the --force flag to skip confirmation
 CMD ["sh", "-c", "php artisan migrate:fresh --seed --force && php -S 0.0.0.0:${PORT:-8080} -t public"]
