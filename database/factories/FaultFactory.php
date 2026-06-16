@@ -23,11 +23,11 @@ class FaultFactory extends Factory
         $downtimeEnd = null;
         $downtimeMinutes = null;
 
+        // For resolved or closed faults, set a random downtime (integer minutes)
         if (in_array($status, ['resolved', 'closed'])) {
             $downtimeEnd = $this->faker->dateTimeBetween($downtimeStart, '+3 days');
-            $diff = $downtimeStart->diff($downtimeEnd);
-            // ✅ Cast to integer to avoid Postgres "invalid input syntax" error
-            $downtimeMinutes = (int) (($diff->days * 24 * 60) + ($diff->h * 60) + $diff->i);
+            // Set a random integer between 1 minute and 7 days (10080 minutes)
+            $downtimeMinutes = $this->faker->numberBetween(1, 10080);
         }
 
         $symptoms = [
@@ -66,7 +66,7 @@ class FaultFactory extends Factory
 
             'downtime_start' => $downtimeStart,
             'downtime_end' => $downtimeEnd,
-            'downtime_minutes' => $downtimeMinutes,
+            'downtime_minutes' => $downtimeMinutes, // Always integer or null
 
             'root_cause' => in_array($status, ['resolved', 'closed'])
                 ? $this->faker->randomElement([
