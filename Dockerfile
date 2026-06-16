@@ -14,14 +14,14 @@ FROM php:8.3-cli-alpine AS app
 
 WORKDIR /var/www/html
 
-# Install system dependencies (IMPORTANT: added libpq-dev)
+# Install system dependencies
 RUN apk add --no-cache \
     git unzip curl bash \
     libpng-dev libjpeg-turbo-dev freetype-dev libwebp-dev \
     libpq-dev \
     zlib-dev oniguruma-dev $PHPIZE_DEPS
 
-# PHP extensions (FIXED: added pdo_pgsql, removed sqlite requirement)
+# PHP extensions
 RUN docker-php-ext-configure gd \
         --with-freetype \
         --with-jpeg \
@@ -38,7 +38,7 @@ RUN curl -sS https://getcomposer.org/installer | php -- \
 # Copy app
 COPY . .
 
-# Install dependencies
+# Install dependencies (without running scripts)
 RUN COMPOSER_ALLOW_SUPERUSER=1 composer install \
     --no-dev \
     --optimize-autoloader \
@@ -52,12 +52,12 @@ COPY --from=frontend /app/public/build /var/www/html/public/build
 RUN mkdir -p storage bootstrap/cache \
     && chmod -R 775 storage bootstrap/cache
 
-# IMPORTANT: REMOVE SQLITE FILE (not needed anymore)
+# Remove SQLite file if present (not needed)
 RUN rm -f database/database.sqlite || true
 
 # Railway port
 ENV PORT=8080
 EXPOSE 8080
 
-# Start server
-CMD ["sh", "-c", "php -S 0.0.0.0:${PORT:-8080} -t public"]
+# Start server (run migrations & seed first)
+CMD ["sh", "-c", "php artisan migrate:fresh --seed && php -S 0.0.0.0:${PORT:-8080} -t public"]
