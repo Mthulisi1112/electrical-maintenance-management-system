@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateBulkWorkOrders;
+use App\Jobs\SendWorkOrderAssignment;
 use App\Models\MaintenanceSchedule;
 use App\Models\WorkOrder;
 use App\Models\Asset;
@@ -147,6 +149,9 @@ class MaintenanceScheduleController extends Controller
                 'title' => $workOrder->title
             ]);
 
+            // Send assignment email asycnhronously 
+            SendWorkOrderAssignment::dispatch($workOrder);
+
             return redirect()->route('work-orders.show', $workOrder)
                 ->with('success', 'Work order generated successfully and assigned to ' . $technician->name);
 
@@ -155,5 +160,21 @@ class MaintenanceScheduleController extends Controller
             return redirect()->back()
                 ->with('error', 'Failed to create work order: ' . $e->getMessage());
         }
+    }
+
+    public function generateBulk(Request $request) 
+    {
+        Gate::authorize('create', WorkOrder::class);
+
+        $scheduleIds = $request->input('schedule_ids', []);
+
+       if (empty($scheduleIds)) {
+         return redirect()->back()->with('error', 'No schedules selected. ');
+       }
+
+       GenerateBulkWorkOrders::dispatch($scheduleIds);
+
+       return redirect()->back()->with('success', 'work orders are being genarated in the background. ');
+
     }
 }

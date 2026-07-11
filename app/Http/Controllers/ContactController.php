@@ -2,11 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessContactForm;
 use App\Models\Contact;
-use App\Mail\ContactFormAdminMail;
-use App\Mail\ContactFormAutoReply;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
 
 class ContactController extends Controller
@@ -26,7 +24,7 @@ class ContactController extends Controller
             'message' => 'required|string',
         ]);
 
-        // 2. OPTION A: Store in database
+        // 2. Store in database
         try {
             $contact = Contact::create([
                 'name' => $validated['name'],
@@ -34,30 +32,16 @@ class ContactController extends Controller
                 'subject' => $validated['subject'],
                 'message' => $validated['message'],
             ]);
+
+        ProcessContactForm::dispatch($contact);
+
+        
+        return redirect()->back()->with('success', 'Thank you for your message! We\'ll get back to you soon.');
+
         } catch (\Exception $e) {
             Log::error('Failed to save contact: ' . $e->getMessage());
-            // Continue anyway - don't let DB failure stop email sending
+          
         }
 
-        // 3. OPTION B: Send emails using Mailtrap 
-        
-        // Send email to YOU (admin notification)
-        try {
-            Mail::to('mthulisi.ndhlovu123@gmail.com') 
-                ->send(new ContactFormAdminMail($validated));
-        } catch (\Exception $e) {
-            Log::error('Failed to send admin email: ' . $e->getMessage());
-        }
-
-        // Send auto-reply to the USER (confirmation)
-        try {
-            Mail::to($validated['email'])
-                ->send(new ContactFormAutoReply($validated));
-        } catch (\Exception $e) {
-            Log::error('Failed to send auto-reply: ' . $e->getMessage());
-        }
-
-        // 4. Redirect with success message
-        return redirect()->back()->with('success', 'Thank you for your message! We\'ll get back to you soon.');
     }
 }

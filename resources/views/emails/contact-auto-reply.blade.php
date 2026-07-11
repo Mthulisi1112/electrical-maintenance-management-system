@@ -27,7 +27,7 @@
                 <p>{{ $data['message'] }}</p>
             </div>
             
-            <p>If you have any urgent concerns, please contact us directly at support@emms.com or call us at +1 (555) 123-4567.</p>
+            <p>If you have any urgent concerns, please contact us directly at support@emms.com or call us at +27 82 082 2083 .</p>
             
             <p>Best regards,<br>
             The EMMS Team</p>

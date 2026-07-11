@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\SendWorkOrderAssignment;
 use App\Models\WorkOrder;
 use App\Models\Asset;
 use App\Models\User;
@@ -75,6 +76,9 @@ class WorkOrderController extends Controller
             'supervisor_id' => auth()->id(),
             'status' => 'pending'
         ]);
+
+        // Send assignment email asynchronously
+        SendWorkOrderAssignment::dispatch($workOrder);
 
         return redirect()->route('work-orders.show', $workOrder)
             ->with('success', 'Work order created successfully.');

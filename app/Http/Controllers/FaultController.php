@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\ProcessFaultImages;
 use App\Models\Fault;
 use App\Models\Asset;
 use App\Models\User;
@@ -72,6 +73,11 @@ class FaultController extends Controller
             'status' => 'reported',
             'downtime_start' => now()
         ]);
+        
+        //Process images in the background
+        if ($request->hasFile('images')) {
+            ProcessFaultImages::dispatch($fault, $request->file('images'));
+        }
 
         // Update asset status
         $fault->asset->update(['status' => 'faulty']);

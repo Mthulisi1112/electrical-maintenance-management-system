@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\GenerateAssetQrCodes;
 use App\Models\Asset;
 use App\Http\Requests\StoreAssetRequest;
 use App\Http\Requests\UpdateAssetRequest;
@@ -53,8 +54,8 @@ class AssetController extends Controller
         
         $asset = Asset::create($validated);
         
-        // Generate QR code after creation
-        $asset->generateQrCode();
+        // Generate QR code asychronously after creation
+        GenerateAssetQrCodes::dispatch($asset);
 
         return redirect()->route('assets.show', $asset)
             ->with('success', 'Asset created successfully.');

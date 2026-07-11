@@ -29,7 +29,7 @@ class ContactFormAutoReply extends Mailable
     public function content(): Content
     {
         return new Content(
-            view: 'emails.contact-auto-reply',
+            markdown: 'mail.contact-auto-reply',
         );
     }
 }
