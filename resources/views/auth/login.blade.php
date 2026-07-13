@@ -115,7 +115,7 @@
 
             {{-- Demo Credentials with click-to-fill --}}
             <div class="mt-6 pt-6 border-t border-gray-200">
-                <p class="text-xs text-center text-gray-500 mb-3">🚀 Demo Credentials (click to fill)</p>
+                <p class="text-xs text-center text-gray-500 mb-3">Demo Credentials (click to fill)</p>
                 <div class="grid grid-cols-2 gap-3">
                     {{-- Admin --}}
                     <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition"

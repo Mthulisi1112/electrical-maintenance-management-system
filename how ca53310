@@ -1,0 +1,65 @@
+[33mcommit ca533102068056fd5f8486960c27611899120cc4[m
+Author: Mthulisi Ndhlovu <mthulisi.ndhlovu123@gmail.com>
+Date:   Tue Jun 16 16:05:30 2026 +0200
+
+    Add demo credentials with click-to-fill on login page
+
+[1mdiff --git a/resources/views/auth/login.blade.php b/resources/views/auth/login.blade.php[m
+[1mindex c03949e..e073595 100644[m
+[1m--- a/resources/views/auth/login.blade.php[m
+[1m+++ b/resources/views/auth/login.blade.php[m
+[36m@@ -113,22 +113,42 @@[m [mclass="w-full flex justify-center py-3 px-4 border border-transparent rounded-lg[m
+                 </div>[m
+             </form>[m
+ [m
+[31m-          {{-- -  <!-- Demo Credentials (Optional) -->[m
+[32m+[m[32m            {{-- Demo Credentials with click-to-fill --}}[m
+             <div class="mt-6 pt-6 border-t border-gray-200">[m
+[31m-                <p class="text-xs text-center text-gray-500 mb-3">Demo Credentials</p>[m
+[31m-                <div class="grid grid-cols-2 gap-2 text-xs text-gray-600">[m
+[31m-                    <div class="p-2 bg-gray-50 rounded-lg">[m
+[31m-                        <p class="font-medium">Admin</p>[m
+[31m-                        <p>admin@emms.com</p>[m
+[31m-                        <p class="text-gray-400">••••••••</p>[m
+[32m+[m[32m                <p class="text-xs text-center text-gray-500 mb-3">🚀 Demo Credentials (click to fill)</p>[m
+[32m+[m[32m                <div class="grid grid-cols-2 gap-3">[m
+[32m+[m[32m                    {{-- Admin --}}[m
+[32m+[m[32m                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg cursor-pointer hover:bg-blue-100 transition"[m
+[32m+[m[32m                         onclick="document.getElementById('email').value='admin@emms.com'; document.getElementById('password').value='password';">[m
+[32m+[m[32m                        <p class="text-sm font-semibold text-blue-800">Administrator</p>[m
+[32m+[m[32m                        <p class="text-xs text-gray-700 mt-1">admin@emms.com</p>[m
+[32m+[m[32m                        <p class="text-xs text-gray-500">password</p>[m
+                     </div>[m
+[31m-                    <div class="p-2 bg-gray-50 rounded-lg">[m
+[31m-                        <p class="font-medium">Supervisor</p>[m
+[31m-                        <p>supervisor@emms.com</p>[m
+[31m-                        <p class="text-gray-400">••••••••</p>[m
+[32m+[m[32m                    {{-- Technician --}}[m
+[32m+[m[32m                    <div class="p-3 bg-green-50 border border-green-200 rounded-lg cursor-pointer hover:bg-green-100 transition"[m
+[32m+[m[32m                         onclick="document.getElementById('email').value='technician@emms.com'; document.getElementById('password').value='password';">[m
+[32m+[m[32m                        <p class="text-sm font-semibold text-green-800">Technician</p>[m
+[32m+[m[32m                        <p class="text-xs text-gray-700 mt-1">technician@emms.com</p>[m
+[32m+[m[32m                        <p class="text-xs text-gray-500">password</p>[m
+[32m+[m[32m                    </div>[m
+[32m+[m[32m                    {{-- Supervisor --}}[m
+[32m+[m[32m                    <div class="p-3 bg-yellow-50 border border-yellow-200 rounded-lg cursor-pointer hover:bg-yellow-100 transition"[m
+[32m+[m[32m                         onclick="document.getElementById('email').value='supervisor@emms.com'; document.getElementById('password').value='password';">[m
+[32m+[m[32m                        <p class="text-sm font-semibold text-yellow-800">Supervisor</p>[m
+[32m+[m[32m                        <p class="text-xs text-gray-700 mt-1">supervisor@emms.com</p>[m
+[32m+[m[32m                        <p class="text-xs text-gray-500">password</p>[m
+[32m+[m[32m                    </div>[m
+[32m+[m[32m                    {{-- Auditor --}}[m
+[32m+[m[32m                    <div class="p-3 bg-purple-50 border border-purple-200 rounded-lg cursor-pointer hover:bg-purple-100 transition"[m
+[32m+[m[32m                         onclick="document.getElementById('email').value='auditor@emms.com'; document.getElementById('password').value='password';">[m
+[32m+[m[32m                        <p class="text-sm font-semibold text-purple-800">Auditor</p>[m
+[32m+[m[32m                        <p class="text-xs text-gray-700 mt-1">auditor@emms.com</p>[m
+[32m+[m[32m                        <p class="text-xs text-gray-500">password</p>[m
+                     </div>[m
+                 </div>[m
+[31m-            </div> --}} [m
+[32m+[m[32m                <p class="mt-2 text-xs text-center text-gray-400">Click any card to auto‑fill the login fields</p>[m
+[32m+[m[32m            </div>[m
+[32m+[m
+         </div>[m
+     </div>[m
+ </div>[m

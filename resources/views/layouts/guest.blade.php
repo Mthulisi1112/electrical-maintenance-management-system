@@ -42,7 +42,7 @@
                         @endif
                         @if(Route::has('register'))
                             <a href="{{ route('register') }}" class="px-4 py-2 text-sm font-medium text-white bg-gray-800 hover:bg-gray-700 rounded-lg shadow-md transition-colors duration-150 border border-gray-700">
-                                Get Started
+                                Sign Up
                             </a>
                         @endif
                     </div>
