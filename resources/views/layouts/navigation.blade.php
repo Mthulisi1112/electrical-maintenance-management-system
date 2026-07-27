@@ -33,18 +33,21 @@
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div class="flex justify-between h-16">
             {{-- Left side - Logo and Navigation --}}
-            <div class="flex items-center space-x-2">
-                {{-- Logo with grey theme --}}
-                <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 group py-2">
-                    <div class="h-9 w-9 rounded-lg bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center shadow-md group-hover:shadow-lg transition-all duration-200 border border-gray-700">
-                        <span class="text-lg font-bold text-gray-200">⚡</span>
+            <div class="flex items-center space-x-2"> 
+                 <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 group py-2">
+                    <div class="flex-shrink-0">
+                        <img
+                            src="{{ asset('images/industrial/logo.png') }}"
+                            alt="EMMS Logo"
+                            class="h-12 w-auto object-contain"
+                        >
                     </div>
-                    <div class="flex flex-col">
+                {{-- -     <div class="flex flex-col">
                         <span class="text-base font-bold text-gray-300 group-hover:text-white transition-colors duration-200 hidden sm:block leading-tight">
                             EMMS
                         </span>
                         <span class="text-[8px] font-medium text-gray-600 hidden sm:block tracking-wider">ELECTRICAL</span>
-                    </div>
+                    </div> --}}
                 </a>
 
                 {{-- Vertical Divider --}}

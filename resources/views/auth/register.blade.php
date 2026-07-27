@@ -6,8 +6,12 @@
 <div class="min-h-screen flex flex-col justify-center py-12 sm:px-6 lg:px-8">
     <div class="sm:mx-auto sm:w-full sm:max-w-md">
         <div class="flex justify-center">
-            <div class="h-20 w-20 rounded-2xl bg-gradient-to-br from-gray-700 to-gray-900 flex items-center justify-center shadow-xl border border-gray-700">
-                <span class="text-4xl font-bold text-gray-200">⚡</span>
+            <div class="flex justify-center">
+                <img
+                    src="{{ asset('images/industrial/logo.png') }}"
+                    alt="EMMS Logo"
+                    class="h-20 w-auto object-contain"
+                >
             </div>
         </div>
         <h2 class="mt-6 text-center text-3xl font-extrabold text-gray-900">
