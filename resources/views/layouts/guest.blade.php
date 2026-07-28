@@ -25,7 +25,7 @@
                         <a href="{{ route('dashboard') }}" class="flex items-center space-x-2 group py-2">
                             <div class="flex-shrink-0">
                                 <img
-                                    src="{{ asset('images/industrial/logo.png') }}"
+                                    src="{{ asset('images/industrial/Logo.png') }}"
                                     alt="EMMS Logo"
                                     class="h-12 w-auto object-contain"
                                 >

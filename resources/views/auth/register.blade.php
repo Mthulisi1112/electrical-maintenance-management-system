@@ -8,7 +8,7 @@
         <div class="flex justify-center">
             <div class="flex justify-center">
                 <img
-                    src="{{ asset('images/industrial/logo.png') }}"
+                    src="{{ asset('images/industrial/Logo.png') }}"
                     alt="EMMS Logo"
                     class="h-20 w-auto object-contain"
                 >
